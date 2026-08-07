@@ -29,7 +29,7 @@ class PostViewSet(viewsets.ModelViewSet):
 class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
 
 
 class FollowViewSet(
@@ -43,31 +43,6 @@ class FollowViewSet(
 
     def get_queryset(self):
         return self.request.user.follower.all()
-
-    def create(self, request, *args, **kwargs):
-        following_username = request.data.get('following')
-        if not following_username:
-            return Response(
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        try:
-            following_user = User.objects.get(username=following_username)
-        except User.DoesNotExist:
-            return Response(
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        if following_user == request.user:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        if Follow.objects.filter(
-            user=request.user,
-            following=following_user
-        ).exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        follow = Follow.objects.create(
-            user=request.user, following=following_user
-        )
-        serializer = self.get_serializer(follow)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
